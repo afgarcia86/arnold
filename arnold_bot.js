@@ -70,6 +70,8 @@ if (!process.env.token) {
 }
 
 var request = require('superagent');
+var moment = require('moment');
+var schedule = require('node-schedule');
 var Botkit = require('botkit');
 var os = require('os');
 
@@ -81,60 +83,54 @@ var bot = controller.spawn({
   token: process.env.token
 }).startRTM();
 
-controller.hears(['hello', 'hi', 'hey', 'welcome', 'yo', 'lets go', 'workout'], 'direct_message,direct_mention,ambient', function(bot, message) {
 
-  sayHello = function(response, convo) {
-    var intro = pickIntro();
-    convo.say(intro);
-    askHowMany(response, convo);
-    convo.next();
-  }
 
-  askHowMany = function(response, convo) {
-    convo.ask('How many workouts do you want to do today?', [
-      {
-        pattern:  /^\d{1,2}$/,
-        callback: function(response, convo) {
+controller.hears(['hello', 'hi', 'hey', 'welcome', 'yo', 'lets go', 'workout', ':muscle:'], 'direct_message,direct_mention,ambient', function(bot, message) {
+  bot.startConversation(message, sayHello);
+});
 
-          if(response.text > 2){
 
-            bot.api.reactions.add({
-              timestamp: response.ts,
-              channel: response.channel,
-              name: pickGoodEmoji(),
-            }, function(err, res) {
-              if (err) {
-                  bot.botkit.log('Failed to add emoji reaction :(', err);
-              }
-            });
+sayHello = function(response, convo) {
+  var intro = pickIntro();
+  convo.say(intro);
+  workout(response, convo);
+  convo.next();
+}
 
-            workout(response, convo);
+workout = function(response, convo) {
+  var movement = pickWorkout();
+  convo.say('Ok, lets do '+movement);
+  askHowMany(response, convo);
+  convo.next();
+}
+
+askHowMany = function(response, convo) {
+  convo.ask('How many workouts have you done today?', [
+    {
+      pattern:  /^\d{1,2}$/,
+      callback: function(response, convo) {
+
+        if(response.text > 2){
+
+          bot.api.reactions.add({
+            timestamp: response.ts,
+            channel: response.channel,
+            name: pickGoodEmoji(),
+          }, function(err, res) {
+            if (err) {
+                bot.botkit.log('Failed to add emoji reaction :(', err);
+            }
+          });
+
+          var veryGood = veryGood();
+          convo.say(veryGood);
+          convo.say("*Don't forget to set an alarm for your next workout!*");
+          getRandomGif('strong', function(imageUrl){
+            convo.say(imageUrl);
             convo.next();
+          });
 
-          } else {
-            bot.api.reactions.add({
-              timestamp: response.ts,
-              channel: response.channel,
-              name: pickBadEmoji(),
-            }, function(err, res) {
-              if (err) {
-                  bot.botkit.log('Failed to add emoji reaction :(', err);
-              }
-            });
-
-            convo.say(pickBaby());
-            getRandomGif('baby', function(imageUrl){
-              convo.say(imageUrl);
-              askHowMany(response, convo);
-              convo.next();
-            });
-          }
-
-        }
-      },
-      {
-        pattern:  'stop',
-        callback: function(response, convo) {
+        } else {
           bot.api.reactions.add({
             timestamp: response.ts,
             channel: response.channel,
@@ -151,77 +147,44 @@ controller.hears(['hello', 'hi', 'hey', 'welcome', 'yo', 'lets go', 'workout'], 
             convo.next();
           });
         }
-      },
-      {
-        default: true,
-        callback: function(response, convo) {
-          convo.say('Sorry I need a number, stupid!');
-          getRandomGif('stupid', function(imageUrl){
-            convo.say(imageUrl);
-            askHowMany(response, convo);
-            convo.next();
-          });
-        }
+
       }
-    ]);
-  }
+    },
+    {
+      pattern:  'stop',
+      callback: function(response, convo) {
+        bot.api.reactions.add({
+          timestamp: response.ts,
+          channel: response.channel,
+          name: pickBadEmoji(),
+        }, function(err, res) {
+          if (err) {
+              bot.botkit.log('Failed to add emoji reaction :(', err);
+          }
+        });
 
-  workout = function(response, convo) {
-    var movement = pickWorkout();
-    convo.say('Ok, lets do '+movement);
-    ready(response, convo);
-    convo.next();
-  }
-
-  ready = function(response, convo) {
-    convo.ask('Are you ready?', [
-      {
-        pattern: 'yes',
-        callback: function(response, convo) {
-          getRandomGif('strong', function(imageUrl){
-            convo.say(imageUrl);
-            convo.next();
-          });
-        }
-      },
-      {
-        pattern: 'no',
-        callback: function(response, convo) {
-          convo.say('Ok, i will give you 1 minute');
-          readyNow(response, convo);    
+        convo.say(pickBaby());
+        getRandomGif('baby', function(imageUrl){
+          convo.say(imageUrl);
           convo.next();
-        }
+        });
       }
-    ]);
-  }
+    },
+    {
+      default: true,
+      callback: function(response, convo) {
+        convo.say('Sorry I need a number, stupid!');
+        getRandomGif('stupid', function(imageUrl){
+          convo.say(imageUrl);
+          askHowMany(response, convo);
+          convo.next();
+        });
+      }
+    }
+  ]);
+}
 
-  readyNow = function(response, convo) {
-    setTimeout(function () {
-      convo.ask('How about now?', [
-        {
-          pattern: 'yes',
-          callback: function(response, convo) {
-            getRandomGif('strong', function(imageUrl){
-              convo.say(imageUrl);
-              convo.next();
-            });
-          }
-        },
-        {
-          pattern: 'no',
-          callback: function(response, convo) {
-            convo.say('Ok, i will give you 1 minute');
-            readyNow(response, convo);    
-            convo.next();
-          }
-        }
-      ]);
-    }, 30000);  
-  }
-
-  bot.startConversation(message, sayHello);
-
-});
+  
 
 controller.hears(['shutdown'], 'direct_message,direct_mention', function(bot, message) {
 
@@ -231,7 +194,7 @@ controller.hears(['shutdown'], 'direct_message,direct_mention', function(bot, me
       {
         pattern: bot.utterances.yes,
         callback: function(response, convo) {
-            convo.say('Bye!');
+            convo.say("I'll be back!");
             convo.next();
             setTimeout(function() {
                 process.exit();
@@ -301,6 +264,13 @@ function pickGoodEmoji() {
   return items[Math.floor(Math.random()*items.length)];
 }
 
+function veryGood(){
+  var items = Array(
+    'Keep it up!',
+    'Thats what I am talking about!',
+    'Do you have a permit for those guns?'
+  )
+}
 
 function pickWorkout() {
   var items = Array(
@@ -308,7 +278,10 @@ function pickWorkout() {
     'some *push ups*',
     'a *plank*',
     'some *jumping jacks*',
-    'some *chair dips*'
+    'some *chair dips*',
+    'some *crunces*',
+    'some *step ups*',
+    'some *lunges*'
   );
   return items[Math.floor(Math.random()*items.length)];
 }
