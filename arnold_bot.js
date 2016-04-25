@@ -139,6 +139,7 @@ askHowMany = function(response, convo) {
           });
 
           convo.say(pickBaby());
+          convo.say("*Don't forget to set an alarm for your next workout!*");
           getRandomGif('baby', function(imageUrl){
             convo.say(imageUrl);
             convo.next();
@@ -277,7 +278,7 @@ function pickWorkout() {
     'a *plank*',
     'some *jumping jacks*',
     'some *chair dips*',
-    'some *crunces*',
+    'some *crunches*',
     'some *step ups*',
     'some *lunges*'
   );
