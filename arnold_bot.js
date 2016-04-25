@@ -70,8 +70,6 @@ if (!process.env.token) {
 }
 
 var request = require('superagent');
-var moment = require('moment');
-var schedule = require('node-schedule');
 var Botkit = require('botkit');
 var os = require('os');
 
@@ -122,8 +120,7 @@ askHowMany = function(response, convo) {
             }
           });
 
-          var veryGood = veryGood();
-          convo.say(veryGood);
+          convo.say(pickGood());
           convo.say("*Don't forget to set an alarm for your next workout!*");
           getRandomGif('strong', function(imageUrl){
             convo.say(imageUrl);
@@ -264,12 +261,13 @@ function pickGoodEmoji() {
   return items[Math.floor(Math.random()*items.length)];
 }
 
-function veryGood(){
+function pickGood() {
   var items = Array(
     'Keep it up!',
     'Thats what I am talking about!',
     'Do you have a permit for those guns?'
   )
+  return items[Math.floor(Math.random()*items.length)];
 }
 
 function pickWorkout() {
