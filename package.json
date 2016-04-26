@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "main": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "token=xoxb-36683193792-5xefGSuiiBGRnpS0rMdNRnXc node arnold_bot.js"
   },
   "repository": {
     "type": "git",
